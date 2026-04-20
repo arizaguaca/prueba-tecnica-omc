@@ -176,5 +176,83 @@ curl -X 'POST' \
 ## 🤖 Endpoint de IA
 Para usar el endpoint `POST /leads/ai/summary`, asegúrate de tener una `OPENAI_API_KEY` válida en tu archivo `.env`. Si no se proporciona, la API devolverá una respuesta **Mock** predefinida para demostración.
 
+## 🌐 Despliegue en Railway
+
+La API se encuentra desplegada y operativa en la siguiente URL:
+**[https://prueba-tecnica-omc-production.up.railway.app](https://prueba-tecnica-omc-production.up.railway.app)**
+
+- **Documentación Swagger**: [https://prueba-tecnica-omc-production.up.railway.app/docs](https://prueba-tecnica-omc-production.up.railway.app/docs)
+- **Base API URL**: `https://prueba-tecnica-omc-production.up.railway.app/api/v1`
+
+## 🚀 Ejemplos de Uso en Producción (Railway)
+
+### 1. Obtener Estadísticas (Producción)
+```bash
+curl -X 'GET' \
+  'https://prueba-tecnica-omc-production.up.railway.app/api/v1/leads/stats' \
+  -H 'X-API-Key: omc_secret_key_123'
+```
+
+### 2. Crear un Lead (Producción)
+```bash
+curl -X 'POST' \
+  'https://prueba-tecnica-omc-production.up.railway.app/api/v1/leads/' \
+  -H 'X-API-Key: omc_secret_key_123' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "nombre": "Victor Railway",
+  "email": "victor.railway@example.com",
+  "fuente": "landing_page",
+  "presupuesto": 3000.0
+}'
+```
+
+### 3. Resumen con IA (Producción)
+```bash
+curl -X 'POST' \
+  'https://prueba-tecnica-omc-production.up.railway.app/api/v1/leads/ai/summary' \
+  -H 'X-API-Key: omc_secret_key_123'
+```
+
+### 4. Listado con Filtros (Producción)
+```bash
+curl -X 'GET' \
+  'https://prueba-tecnica-omc-production.up.railway.app/api/v1/leads/?fuente=facebook' \
+  -H 'X-API-Key: omc_secret_key_123'
+```
+
+### 5. Actualizar Lead (Producción)
+```bash
+curl -X 'PATCH' \
+  'https://prueba-tecnica-omc-production.up.railway.app/api/v1/leads/<ID>' \
+  -H 'X-API-Key: omc_secret_key_123' \
+  -H 'Content-Type: application/json' \
+  -d '{"presupuesto": 5000.0}'
+```
+
+### 6. Eliminar Lead - Soft Delete (Producción)
+```bash
+curl -X 'DELETE' \
+  'https://prueba-tecnica-omc-production.up.railway.app/api/v1/leads/<ID>' \
+  -H 'X-API-Key: omc_secret_key_123'
+```
+
+### 7. Webhook Typeform (Producción)
+```bash
+curl -X 'POST' \
+  'https://prueba-tecnica-omc-production.up.railway.app/api/v1/leads/webhook' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "event_id": "pro_123",
+  "event_type": "form_response",
+  "form_response": {
+    "answers": [
+      { "type": "text", "text": "Lead Railway", "field": { "ref": "nombre" } },
+      { "type": "email", "email": "prod@example.com", "field": { "ref": "email" } }
+    ]
+  }
+}'
+```
+
 ---
 Desarrollado como prueba técnica para OMC.
