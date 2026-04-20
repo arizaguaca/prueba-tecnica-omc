@@ -9,6 +9,8 @@ API robusta desarrollada con FastAPI para la gestión integral de Leads (prospec
 - **Análisis con IA**: Generación de resúmenes ejecutivos usando OpenAI (con soporte de mock).
 - **Soft Delete**: Los registros no se borran físicamente, permitiendo auditoría.
 - **Estadísticas**: Endpoint dedicado para métricas de negocio.
+- **Seguridad**: Autenticación mediante **API Key** (header `X-API-Key`).
+- **Rate Limiting**: Protección contra abusos limitando peticiones por IP.
 - **Documentación**: Swagger interactivo integrado.
 
 ## 🛠️ Tecnologías Usadas
@@ -16,6 +18,7 @@ API robusta desarrollada con FastAPI para la gestión integral de Leads (prospec
 - **Python 3.10+**
 - **FastAPI**: Framework web de alto rendimiento.
 - **SQLAlchemy**: ORM para gestión de base de datos.
+- **SlowAPI**: Implementación de Rate Limiting.
 - **MySQL / SQLite**: Compatible con múltiples motores.
 - **OpenAI**: Integración de inteligencia artificial.
 - **Pydantic**: Validación de datos y esquemas.
@@ -110,6 +113,7 @@ Una vez iniciada la aplicación, puedes acceder a la documentación interactiva:
 ```bash
 curl -X 'POST' \
   'http://localhost:8000/api/v1/leads/' \
+  -H 'X-API-Key: omc_secret_key_123' \
   -H 'Content-Type: application/json' \
   -d '{
   "nombre": "Juan Perez",
@@ -123,30 +127,50 @@ curl -X 'POST' \
 
 ### 2. Listado con Paginación y Filtros
 ```bash
-curl -X 'GET' 'http://localhost:8000/api/v1/leads/?page=1&limit=10&fuente=facebook'
+curl -X 'GET' \
+  -H 'X-API-Key: omc_secret_key_123' \
+  'http://localhost:8000/api/v1/leads/?page=1&limit=10&fuente=facebook'
 ```
 
 ### 3. Obtener Estadísticas
 ```bash
-curl -X 'GET' 'http://localhost:8000/api/v1/leads/stats'
+curl -X 'GET' \
+  -H 'X-API-Key: omc_secret_key_123' \
+  'http://localhost:8000/api/v1/leads/stats'
 ```
 
 ### 4. Actualizar un Lead (PATCH)
 ```bash
 curl -X 'PATCH' \
   'http://localhost:8000/api/v1/leads/<ID>' \
+  -H 'X-API-Key: omc_secret_key_123' \
   -H 'Content-Type: application/json' \
   -d '{"presupuesto": 2500.0}'
 ```
 
 ### 5. Borrado Lógico (DELETE)
 ```bash
-curl -X 'DELETE' 'http://localhost:8000/api/v1/leads/<ID>'
+curl -X 'DELETE' \
+  -H 'X-API-Key: omc_secret_key_123' \
+  'http://localhost:8000/api/v1/leads/<ID>'
 ```
 
-### 6. Resumen con IA
+### 7. Webhook (Simulando Typeform)
 ```bash
-curl -X 'POST' 'http://localhost:8000/api/v1/leads/ai/summary'
+curl -X 'POST' \
+  'http://localhost:8000/api/v1/leads/webhook' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "event_id": "Lt679p92",
+  "event_type": "form_response",
+  "form_response": {
+    "answers": [
+      { "type": "text", "text": "Cliente Webhook", "field": { "ref": "nombre" } },
+      { "type": "email", "email": "webhook.user@example.com", "field": { "ref": "email" } },
+      { "type": "number", "number": 1200, "field": { "ref": "presupuesto" } }
+    ]
+  }
+}'
 ```
 
 ## 🤖 Endpoint de IA

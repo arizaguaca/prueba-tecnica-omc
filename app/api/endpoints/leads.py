@@ -1,15 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from app.core.database import get_db
-from app.schemas.lead import Lead, LeadCreate, LeadUpdate, LeadStats, LeadSource, AISummaryResponse
+from app.schemas.lead import Lead, LeadCreate, LeadUpdate, LeadStats, LeadSource, AISummaryResponse, TypeformWebhook
 from app.services.lead_service import LeadService
+from app.core.security import get_api_key
+from app.core.limiter import limiter
+from app.core.config import settings
 
 router = APIRouter()
 
-@router.post("/", response_model=Lead, status_code=status.HTTP_201_CREATED)
-def create_lead(lead: LeadCreate, db: Session = Depends(get_db)):
+# Protected routes dependency
+protected = [Depends(get_api_key)]
+
+@router.post("/", response_model=Lead, status_code=status.HTTP_201_CREATED, dependencies=protected)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
+def create_lead(request: Request, lead: LeadCreate, db: Session = Depends(get_db)):
     try:
         return LeadService.create_lead(db, lead)
     except Exception as e:
@@ -18,8 +25,10 @@ def create_lead(lead: LeadCreate, db: Session = Depends(get_db)):
             detail=f"Error creating lead: {str(e)}"
         )
 
-@router.get("/", response_model=List[Lead])
+@router.get("/", response_model=List[Lead], dependencies=protected)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
 def read_leads(
+    request: Request,
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     fuente: Optional[LeadSource] = None,
@@ -38,12 +47,14 @@ def read_leads(
     )
     return leads
 
-@router.get("/stats", response_model=LeadStats)
-def get_lead_stats(db: Session = Depends(get_db)):
+@router.get("/stats", response_model=LeadStats, dependencies=protected)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
+def get_lead_stats(request: Request, db: Session = Depends(get_db)):
     return LeadService.get_stats(db)
 
-@router.get("/{lead_id}", response_model=Lead)
-def read_lead(lead_id: str, db: Session = Depends(get_db)):
+@router.get("/{lead_id}", response_model=Lead, dependencies=protected)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
+def read_lead(request: Request, lead_id: str, db: Session = Depends(get_db)):
     db_lead = LeadService.get_lead(db, lead_id=lead_id)
     if db_lead is None:
         raise HTTPException(
@@ -52,8 +63,9 @@ def read_lead(lead_id: str, db: Session = Depends(get_db)):
         )
     return db_lead
 
-@router.patch("/{lead_id}", response_model=Lead)
-def update_lead(lead_id: str, lead: LeadUpdate, db: Session = Depends(get_db)):
+@router.patch("/{lead_id}", response_model=Lead, dependencies=protected)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
+def update_lead(request: Request, lead_id: str, lead: LeadUpdate, db: Session = Depends(get_db)):
     db_lead = LeadService.update_lead(db, lead_id=lead_id, lead_data=lead)
     if db_lead is None:
         raise HTTPException(
@@ -62,8 +74,9 @@ def update_lead(lead_id: str, lead: LeadUpdate, db: Session = Depends(get_db)):
         )
     return db_lead
 
-@router.delete("/{lead_id}", response_model=Lead)
-def delete_lead(lead_id: str, db: Session = Depends(get_db)):
+@router.delete("/{lead_id}", response_model=Lead, dependencies=protected)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
+def delete_lead(request: Request, lead_id: str, db: Session = Depends(get_db)):
     db_lead = LeadService.soft_delete_lead(db, lead_id=lead_id)
     if db_lead is None:
         raise HTTPException(
@@ -72,8 +85,10 @@ def delete_lead(lead_id: str, db: Session = Depends(get_db)):
         )
     return db_lead
 
-@router.post("/ai/summary", response_model=AISummaryResponse)
+@router.post("/ai/summary", response_model=AISummaryResponse, dependencies=protected)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
 def get_ai_summary(
+    request: Request,
     fuente: Optional[LeadSource] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
@@ -109,3 +124,14 @@ def get_ai_summary(
     
     from app.services.ai_service import AIService
     return AIService.generate_summary(leads_data)
+
+@router.post("/webhook", response_model=Lead)
+@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
+def typeform_webhook(request: Request, webhook: TypeformWebhook, db: Session = Depends(get_db)):
+    try:
+        return LeadService.process_typeform_webhook(db, webhook.model_dump())
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"Error processing webhook: {str(e)}"
+        )

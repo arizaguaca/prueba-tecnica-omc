@@ -84,3 +84,42 @@ class LeadService:
             "average_budget": float(avg_budget),
             "leads_last_7_days": leads_last_7_days
         }
+
+    @staticmethod
+    def process_typeform_webhook(db: Session, webhook_data: Dict) -> Lead:
+        answers = webhook_data.get("form_response", {}).get("answers", [])
+        
+        lead_data = {
+            "nombre": "Unknown",
+            "email": "",
+            "fuente": LeadSource.landing_page,
+            "telefono": None,
+            "producto_interes": None,
+            "presupuesto": 0.0
+        }
+
+        for answer in answers:
+            field_ref = answer.get("field", {}).get("ref", "").lower()
+            field_type = answer.get("type")
+            
+            if "name" in field_ref or "nombre" in field_ref:
+                lead_data["nombre"] = answer.get("text") or "Unknown"
+            elif field_type == "email" or "email" in field_ref:
+                lead_data["email"] = answer.get("email") or answer.get("text")
+            elif "phone" in field_ref or "telefono" in field_ref:
+                lead_data["telefono"] = answer.get("text") or str(answer.get("number", ""))
+            elif "budget" in field_ref or "presupuesto" in field_ref:
+                lead_data["presupuesto"] = float(answer.get("number") or 0)
+            elif "product" in field_ref or "producto" in field_ref:
+                lead_data["producto_interes"] = answer.get("text") or answer.get("choice", {}).get("label")
+
+        if not lead_data["email"]:
+            # Fallback if no email found
+            import uuid
+            lead_data["email"] = f"webhook_{uuid.uuid4().hex[:8]}@example.com"
+
+        db_lead = Lead(**lead_data)
+        db.add(db_lead)
+        db.commit()
+        db.refresh(db_lead)
+        return db_lead

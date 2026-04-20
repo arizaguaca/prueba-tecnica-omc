@@ -113,3 +113,46 @@ def test_get_ai_summary(client):
     data = response.json()
     assert "summary" in data
     assert "is_mock" in data
+
+def test_unauthorized_access(client):
+    # The client fixture has a default valid API key. 
+    # We use a fresh TestClient here to test without/with invalid key.
+    from fastapi.testclient import TestClient
+    from app.main import app
+    
+    with TestClient(app) as anonymous_client:
+        response = anonymous_client.get("/api/v1/leads/")
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Invalid or missing API Key"
+
+def test_typeform_webhook(client):
+    # Webhook is public (no API Key required in our implementation)
+    payload = {
+        "event_id": "123",
+        "event_type": "form_response",
+        "form_response": {
+            "answers": [
+                {
+                    "type": "text",
+                    "text": "Webhook User",
+                    "field": {"ref": "name_field"}
+                },
+                {
+                    "type": "email",
+                    "email": "webhook@typeform.com",
+                    "field": {"ref": "email_field"}
+                },
+                {
+                    "type": "number",
+                    "number": 5000,
+                    "field": {"ref": "budget_field"}
+                }
+            ]
+        }
+    }
+    response = client.post("/api/v1/leads/webhook", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["nombre"] == "Webhook User"
+    assert data["email"] == "webhook@typeform.com"
+    assert data["presupuesto"] == 5000

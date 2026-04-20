@@ -49,3 +49,19 @@ class AISummaryResponse(BaseModel):
     best_source: str
     marketing_recommendations: List[str]
     is_mock: Optional[bool] = False
+
+class TypeformAnswer(BaseModel):
+    type: str
+    text: Optional[str] = None
+    email: Optional[str] = None
+    number: Optional[float] = None
+    choice: Optional[Dict] = None
+    field: Dict
+
+class TypeformResponse(BaseModel):
+    answers: List[TypeformAnswer]
+
+class TypeformWebhook(BaseModel):
+    event_id: str
+    event_type: str
+    form_response: TypeformResponse

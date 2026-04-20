@@ -46,6 +46,7 @@ def client(db_session):
             pass
     
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
+    # Set default headers for all requests in the test client
+    with TestClient(app, headers={"X-API-Key": "omc_secret_key_123"}) as c:
         yield c
     app.dependency_overrides.clear()
