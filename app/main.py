@@ -7,7 +7,16 @@ from app.models import lead  # Import models to register them with Base.metadata
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title=settings.PROJECT_NAME)
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    description="""
+    API para la gestión de Leads (Prospectos). 
+    Permite crear, listar, actualizar y eliminar leads, además de obtener estadísticas detalladas.
+    """,
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
 
 app.include_router(api_router, prefix="/api/v1")
 
