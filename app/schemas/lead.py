@@ -42,3 +42,10 @@ class LeadStats(BaseModel):
     leads_by_source: Dict[str, int]
     average_budget: float
     leads_last_7_days: int
+
+class AISummaryResponse(BaseModel):
+    summary: str
+    analysis: str
+    best_source: str
+    marketing_recommendations: List[str]
+    is_mock: Optional[bool] = False

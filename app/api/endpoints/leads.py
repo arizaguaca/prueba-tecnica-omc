@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from app.core.database import get_db
-from app.schemas.lead import Lead, LeadCreate, LeadUpdate, LeadStats, LeadSource
+from app.schemas.lead import Lead, LeadCreate, LeadUpdate, LeadStats, LeadSource, AISummaryResponse
 from app.services.lead_service import LeadService
 
 router = APIRouter()
@@ -71,3 +71,41 @@ def delete_lead(lead_id: str, db: Session = Depends(get_db)):
             detail="Lead not found or already deleted"
         )
     return db_lead
+
+@router.post("/ai/summary", response_model=AISummaryResponse)
+def get_ai_summary(
+    fuente: Optional[LeadSource] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    db: Session = Depends(get_db)
+):
+    # Get leads based on filters
+    leads = LeadService.get_leads(
+        db, 
+        skip=0, 
+        limit=1000, 
+        fuente=fuente, 
+        start_date=start_date, 
+        end_date=end_date
+    )
+    
+    if not leads:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="No leads found with the specified filters"
+        )
+    
+    # Convert leads to list of dicts for the service
+    leads_data = [
+        {
+            "nombre": l.nombre,
+            "email": l.email,
+            "fuente": l.fuente,
+            "producto_interes": l.producto_interes,
+            "presupuesto": l.presupuesto
+        }
+        for l in leads
+    ]
+    
+    from app.services.ai_service import AIService
+    return AIService.generate_summary(leads_data)
