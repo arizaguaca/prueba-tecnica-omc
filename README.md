@@ -88,6 +88,15 @@ O usando uvicorn directamente:
 uvicorn app.main:app --reload
 ```
 
+## 🧪 Pruebas (Testing)
+
+El proyecto incluye una suite de pruebas automatizadas con `pytest`. Para ejecutarlas:
+
+```bash
+./venv/bin/pytest tests/test_leads.py
+```
+*Las pruebas utilizan una base de datos SQLite en memoria para no afectar los datos reales.*
+
 ## 📖 Documentación
 
 Una vez iniciada la aplicación, puedes acceder a la documentación interactiva:

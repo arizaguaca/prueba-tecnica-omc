@@ -7,3 +7,6 @@ pymysql
 cryptography
 faker
 openai
+pytest
+httpx
+pytest-asyncio
